@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Desempenho de Clubes</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #0056b3;
+        }
+        .summary-cards {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            flex: 1;
+            min-width: 220px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .card p {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        /* Estilos para o crescimento */
+        .growth-positive {
+            color: green;
+        }
+        .growth-negative {
+            color: red;
+        }
+        .growth-neutral {
+            color: orange;
+        }
+        .growth-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            white-space: nowrap; 
+            display: inline-block; 
+            margin-top: 0; 
+        }
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filters label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .filters select, .filters input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .charts-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            flex: 1;
+            min-width: 400px; 
+            max-width: 48%; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            word-wrap: break-word; 
+            box-sizing: border-box; 
+            display: table-cell; 
+            white-space: normal; 
+            border: 1px solid purple !important; /* MANTER PARA DEBUG */
+        }
+        /* Ajuste de largura das colunas Th */
+        th:nth-child(1) { width: 8%; } 
+        th:nth-child(2) { width: 6%; } 
+        th:nth-child(3) { width: 18%; } 
+        th:nth-child(4) { width: 10%; } 
+        th:nth-child(5) { width: 8%; } 
+        th:nth-child(6) { width: 10%; } 
+        th:nth-child(7) { width: 10%; } 
+        th:nth-child(8) { width: 10%; } 
+        th:nth-child(9) { width: 10%; } 
+        th:nth-child(10) { width: 10%; } 
+
+        th {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #0056b3;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .status-ativo {
+            color: green;
+            font-weight: bold;
+        }
+        .status-inativo {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-header">
+        <h1>Dashboard de Desempenho de Clubes</h1>
+    </div>
+
+    <div class="summary-cards">
+        <div class="card">
+            <h3>GGR Total</h3>
+            <p id="ggrTotal">R$ 0</p>
+        </div>
+        <div class="card">
+            <h3>FTD Total</h3>
+            <p id="ftdTotal">0</p>
+        </div>
+        <div class="card">
+            <h3>Depósitos Totais</h3>
+            <p id="depositsTotal">R$ 0</p>
+        </div>
+        <div class="card">
+            <h3>Clubes Ativos (Últ. Mês)</h3>
+            <p id="activeClubsCount">0</p>
+        </div>
+    </div>
+
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>GGR por Mês/Ano</h3>
+            <canvas id="ggrChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>FTD por Mês/Ano</h3>
+            <canvas id="ftdChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Depósitos por Mês/Ano</h3>
+            <canvas id="depositsChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Clubes Ativos por Mês/Ano</h3>
+            <canvas id="activeClubsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="filters">
+        <div>
+            <label for="mesFilter">Filtrar por Mês:</label>
+            <select id="mesFilter">
+                <option value="">Todos os Meses</option>
+                </select>
+        </div>
+        <div>
+            <label for="anoFilter">Filtrar por Ano:</label>
+            <select id="anoFilter">
+                <option value="">Todos os Anos</option>
+                </select>
+        </div>
+        <div>
+            <label for="clubeSearch">Buscar Clube:</label>
+            <input type="text" id="clubeSearch" placeholder="Digite o nome do clube...">
+        </div>
+    </div>
+
+    <table id="clubDataTable">
+        <thead>
+            <tr>
+                <th data-sort="Mes">Mês</th>
+                <th data-sort="Ano">Ano</th>
+                <th data-sort="NomeClube">Nome do Clube</th>
+                <th data-sort="GGR">GGR</th>
+                <th data-sort="FTD">FTD</th>
+                <th data-sort="Depositos">Depósitos</th>
+                <th data-sort="CrescimentoGGRMoM">Crescimento GGR (Mês a Mês)</th>
+                <th data-sort="CrescimentoFTDMoM">Crescimento FTD (Mês a Mês)</th>
+                <th data-sort="CrescimentoDepositosMoM">Crescimento Depósitos (Mês a Mês)</th>
+                <th data-sort="Status">Status</th>
+            </tr>
+        </thead>
+        <tbody id="clubTableBody">
+            </tbody>
+    </table>
+
+    <script>
+        // ** SUA URL DA API JSONP (JÁ PREENCHIDA AQUI!) **
+        const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbw-DtDdmjiLFpIBG2klRGPZ-5YuimPrSpfBEO1672oz_jV0TKMT6QemHUcLAgD_Nv9W/exec'; 
+
+        let allClubData = []; 
+
+        // Mapeamento de nomes de meses para números para ordenação cronológica
+        const monthOrderMap = {
+            "janeiro": 1, "fevereiro": 2, "março": 3, "abril": 4, "maio": 5, "junho": 6,
+            "julho": 7, "agosto": 8, "setembro": 9, "outubro": 10, "novembro": 11, "dezembro": 12
+        };
+
+        // Instâncias dos gráficos
+        let ggrChartInstance, ftdChartInstance, depositsChartInstance, activeClubsChartInstance; // Adicionado activeClubsChartInstance
+
+        // Função para analisar e converter números de forma segura (lidando com vírgulas)
+        function safeParseNumber(value) {
+            if (typeof value === 'number') { 
+                return value;
+            }
+            if (typeof value === 'string') {
+                const cleanedValue = value.replace(/\./g, '').replace(',', '.');
+                return parseFloat(cleanedValue) || 0; 
+            }
+            return 0; 
+        }
+
+        // Função auxiliar para formatar moeda
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        
+        // Função de callback global que o Apps Script vai chamar com os dados
+        window.meuCallbackDeDados = function(data) {
+            console.log("Dados recebidos via JSONP:", data); 
+            allClubData = data.map(item => { // NOVO: Mapeia para definir o status por linha
+                const newItem = { ...item };
+                newItem.Status = (safeParseNumber(newItem.FTD) > 0) ? 'Ativo' : 'Inativo';
+                return newItem;
+            });
+            
+            // calculateOverallGrowthMetrics(allClubData); // REMOVIDO: Já que os cartões foram retirados
+            populateFilters(allClubData); 
+            applyFiltersAndRenderTable(); 
+        };
+
+        // Função para carregar os dados via JSONP
+        function loadData() {
+            const script = document.createElement('script');
+            script.src = API_BASE_URL + '?callback=meuCallbackDeDados';
+            document.head.appendChild(script);
+            script.onerror = () => {
+                console.error("Erro ao carregar dados da API via JSONP. Verifique a URL e a implantação.");
+                document.getElementById('clubTableBody').innerHTML = '<tr><td colspan="10">Erro ao carregar dados. Verifique a URL da API e a implantação.</td></tr>';
+            };
+        }
+
+        // Preenche os filtros de meses e anos
+        function populateFilters(data) {
+            const mesFilter = document.getElementById('mesFilter');
+            const anoFilter = document.getElementById('anoFilter');
+
+            mesFilter.innerHTML = '<option value="">Todos os Meses</option>'; 
+            anoFilter.innerHTML = '<option value="">Todos os Anos</option>'; 
+
+            const meses = [...new Set(data.map(item => item.Mes))].filter(Boolean).sort((a, b) => {
+                return (monthOrderMap[String(a).toLowerCase()] || 0) - (monthOrderMap[String(b).toLowerCase()] || 0);
+            });
+            meses.forEach(mes => {
+                const option = document.createElement('option');
+                option.value = mes;
+                option.textContent = mes;
+                mesFilter.appendChild(option);
+            });
+
+            const anos = [...new Set(data.map(item => item.Ano))].filter(Boolean).sort((a, b) => a - b);
+            anos.forEach(ano => {
+                const option = document.createElement('option');
+                option.value = ano;
+                option.textContent = ano;
+                anoFilter.appendChild(option);
+            });
+        }
+
+        // REMOVIDA: calculateOverallGrowthMetrics (A lógica de crescimento geral foi removida)
+        /*
+        function calculateOverallGrowthMetrics(data) {
+            // ... (código de cálculo de crescimento geral) ...
+        }
+        */
+
+        // Função para calcular Crescimento Mês a Mês por Clube (para a tabela)
+        function calculatePerClubGrowthMetrics(data) {
+             const sortedData = [...data].sort((a, b) => { 
+                const dateA = new Date(a.Ano, (monthOrderMap[String(a.Mes || '').toLowerCase()] || 0) - 1);
+                const dateB = new Date(b.Ano, (monthOrderMap[String(b.Mes || '').toLowerCase()] || 0) - 1);
+                return dateA - dateB;
+            });
+
+            const calculateMoMGrowth = (currentValue, previousValue) => {
+                if (previousValue !== 0) {
+                    return ((currentValue - previousValue) / previousValue) * 100;
+                } else if (currentValue > 0) {
+                    return 100; 
+                }
+                return 0; 
+            };
+
+            const clubDataMap = sortedData.reduce((acc, item) => {
+                if (!acc[item.NomeClube]) {
+                    acc[item.NomeClube] = [];
+                }
+                acc[item.NomeClube].push(item);
+                return acc;
+            }, {});
+
+            return allClubData.map(originalItem => {
+                const item = { ...originalItem }; 
+                const clubSpecificData = clubDataMap[item.NomeClube];
+                
+                if (!clubSpecificData || clubSpecificData.length < 2) {
+                    item.CrescimentoGGRMoM = '--';
+                    item.CrescimentoFTDMoM = '--';
+                    item.CrescimentoDepositosMoM = '--';
+                    return item;
+                }
+
+                const currentIndex = clubSpecificData.findIndex(d => 
+                    String(d.Mes || '').toLowerCase() === String(item.Mes || '').toLowerCase() && String(d.Ano) === String(item.Ano) && d.NomeClube === item.NomeClube
+                );
+
+                if (currentIndex > 0) {
+                    const previousItem = clubSpecificData[currentIndex - 1]; 
+
+                    item.CrescimentoGGRMoM = calculateMoMGrowth(safeParseNumber(item.GGR), safeParseNumber(previousItem.GGR));
+                    item.CrescimentoFTDMoM = calculateMoMGrowth(safeParseNumber(item.FTD), safeParseNumber(previousItem.FTD)); 
+                    item.CrescimentoDepositosMoM = calculateMoMGrowth(safeParseNumber(item.Depositos), safeParseNumber(previousItem.Depositos));
+                    
+                } else {
+                    item.CrescimentoGGRMoM = '--';
+                    item.CrescimentoFTDMoM = '--';
+                    item.CrescimentoDepositosMoM = '--';
+                }
+                return item;
+            });
+        }
+
+
+        // Função para exibir o valor de crescimento com formatação e cor
+        function displayGrowth(value) {
+            let formattedValue;
+            let className = 'growth-value';
+
+            if (typeof value === 'number') {
+                formattedValue = value.toFixed(2) + '%';
+                if (value > 0) {
+                    className += ' growth-positive';
+                } else if (value < 0) {
+                    className += ' growth-negative';
+                } else {
+                    className += ' growth-neutral';
+                }
+            } else {
+                formattedValue = value; // "--"
+            }
+            return `<span class="${className}">${formattedValue}</span>`;
+        }
+
+
+        // Aplica os filtros e renderiza a tabela e atualiza os gráficos
+        function applyFiltersAndRenderTable() {
+            const selectedMes = document.getElementById('mesFilter').value;
+            const selectedAno = document.getElementById('anoFilter').value;
+            const searchTerm = document.getElementById('clubeSearch').value.toLowerCase(); 
+
+            let dataWithGrowth = calculatePerClubGrowthMetrics(allClubData); 
+
+            let currentFilteredData = dataWithGrowth.filter(item => { 
+                const matchesMes = selectedMes ? (String(item.Mes || '').toLowerCase() === selectedMes.toLowerCase()) : true;
+                const matchesAno = selectedAno ? (String(item.Ano) === selectedAno) : true;
+                
+                const matchesSearch = searchTerm ? (String(item.NomeClube || '').toLowerCase() === searchTerm) : true; 
+                
+                return matchesMes && matchesAno && matchesSearch;
+            });
+
+            // console.log("--- DEBUG: Dados que serão renderizados na tabela (currentFilteredData):", JSON.stringify(currentFilteredData, null, 2)); // Desativado para limpeza
+
+            renderTable(currentFilteredData);
+            updateSummaryCards(currentFilteredData); 
+            
+            createCharts(currentFilteredData); 
+            updateActiveClubsCount(currentFilteredData); // NOVO: Atualiza a contagem de clubes ativos
+            createActiveClubsChart(currentFilteredData); // NOVO: Cria o gráfico de clubes ativos
+        }
+
+        // Renderiza a tabela com os dados fornecidos
+        function renderTable(data) {
+            const tableBody = document.getElementById('clubTableBody');
+            tableBody.innerHTML = ''; 
+
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10">Nenhum dado encontrado para os filtros aplicados.</td></tr>';
+                return;
+            }
+
+            data.forEach(item => {
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = item.Mes || '';
+                row.insertCell().textContent = item.Ano || '';
+                row.insertCell().textContent = item.NomeClube || '';
+                row.insertCell().textContent = formatCurrency(safeParseNumber(item.GGR)); 
+                row.insertCell().textContent = formatCurrency(safeParseNumber(item.FTD)); 
+                row.insertCell().textContent = formatCurrency(safeParseNumber(item.Depositos)); 
+                
+                const ggrGrowthCell = row.insertCell();
+                ggrGrowthCell.innerHTML = displayGrowth(item.CrescimentoGGRMoM);
+
+                const ftdGrowthCell = row.insertCell();
+                ftdGrowthCell.innerHTML = displayGrowth(item.CrescimentoFTDMoM);
+
+                const depositsGrowthCell = row.insertCell();
+                depositsGrowthCell.innerHTML = displayGrowth(item.CrescimentoDepositosMoM);
+
+                const statusCell = row.insertCell();
+                statusCell.textContent = item.Status || ''; 
+                statusCell.className = (String(item.Status || '').toLowerCase() === 'ativo') ? 'status-ativo' : 'status-inativo';
+            });
+        }
+
+        // Atualiza os cartões de resumo (agora incluindo o novo de clubes ativos)
+        function updateSummaryCards(data) {
+            const ggrTotal = data.reduce((sum, item) => sum + safeParseNumber(item.GGR), 0);
+            const ftdTotal = data.reduce((sum, item) => sum + safeParseNumber(item.FTD), 0);
+            const depositsTotal = data.reduce((sum, item) => sum + safeParseNumber(item.Depositos), 0);
+
+            document.getElementById('ggrTotal').textContent = formatCurrency(ggrTotal);
+            document.getElementById('ftdTotal').textContent = formatCurrency(ftdTotal); 
+            document.getElementById('depositsTotal').textContent = formatCurrency(depositsTotal);
+            // NÃO ATUALIZA AQUI O CRESCIMENTO GERAL, POIS OS CARTÕES FORAM REMOVIDOS
+        }
+
+        // NOVO: Atualiza a contagem de clubes ativos para o último mês
+        function updateActiveClubsCount(data) {
+            // Primeiro, pegamos o mês/ano mais recente presente nos dados filtrados
+            const sortedData = [...data].sort((a, b) => {
+                const dateA = new Date(a.Ano, (monthOrderMap[String(a.Mes || '').toLowerCase()] || 0) - 1);
+                const dateB = new Date(b.Ano, (monthOrderMap[String(b.Mes || '').toLowerCase()] || 0) - 1);
+                return dateA - dateB;
+            });
+
+            if (sortedData.length === 0) {
+                document.getElementById('activeClubsCount').textContent = '0';
+                return;
+            }
+
+            const latestMonthEntry = sortedData[sortedData.length - 1];
+            const latestMonth = latestMonthEntry.Mes;
+            const latestYear = latestMonthEntry.Ano;
+
+            // Filtra os dados para o mês e ano mais recente e conta os clubes ativos
+            const activeClubsInLatestMonth = data.filter(item => 
+                String(item.Mes || '').toLowerCase() === String(latestMonth || '').toLowerCase() && 
+                String(item.Ano) === String(latestYear) &&
+                String(item.Status || '').toLowerCase() === 'ativo'
+            );
+            
+            // Usamos um Set para contar clubes únicos, caso haja múltiplas entradas para um clube no mesmo mês
+            const uniqueActiveClubs = new Set(activeClubsInLatestMonth.map(item => item.NomeClube));
+            document.getElementById('activeClubsCount').textContent = uniqueActiveClubs.size;
+        }
+
+
+        // Lógica de ordenação da tabela (sem mudanças aqui)
+        document.querySelectorAll('#clubDataTable th').forEach(headerCell => {
+            headerCell.addEventListener('click', () => {
+                const sortBy = headerCell.getAttribute('data-sort');
+                const isNumeric = ['GGR', 'FTD', 'Depositos', 'CrescimentoGGRMoM', 'CrescimentoFTDMoM', 'CrescimentoDepositosMoM'].includes(sortBy);
+                let direction = headerCell.getAttribute('data-direction') === 'asc' ? 'desc' : 'asc';
+
+                document.querySelectorAll('#clubDataTable th').forEach(th => th.removeAttribute('data-direction'));
+                headerCell.setAttribute('data-direction', direction);
+
+                const dataToSort = [...filteredClubData]; 
+
+                dataToSort.sort((a, b) => {
+                    let valA = isNumeric ? safeParseNumber(a[sortBy]) : String(a[sortBy] || '').toLowerCase();
+                    let valB = isNumeric ? safeParseNumber(b[sortBy]) : String(b[sortBy] || '').toLowerCase();
+
+                    if (sortBy === 'Mes' || sortBy === 'Ano') {
+                         const dateA = new Date(a.Ano, (monthOrderMap[String(a.Mes || '').toLowerCase()] || 0) - 1);
+                         const dateB = new Date(b.Ano, (monthOrderMap[String(b.Mes || '').toLowerCase()] || 0) - 1);
+                         if (dateA < dateB) return direction === 'asc' ? -1 : 1;
+                         if (dateA > dateB) return direction === 'asc' ? 1 : -1;
+                         return 0;
+                    }
+
+                    if (valA < valB) return direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                renderTable(dataToSort); 
+            });
+        });
+
+        // Adiciona listeners para os filtros
+        document.getElementById('mesFilter').addEventListener('change', applyFiltersAndRenderTable);
+        document.getElementById('anoFilter').addEventListener('change', applyFiltersAndRenderTable);
+        document.getElementById('clubeSearch').addEventListener('input', applyFiltersAndRenderTable);
+
+
+        // --- Funções para os gráficos Chart.js ---
+
+        function createCharts(dataToChart) {
+            const totalsByMonth = dataToChart.reduce((acc, item) => {
+                const monthYearKey = `${item.Ano}-${String(monthOrderMap[String(item.Mes || '').toLowerCase()]).padStart(2, '0')}`;
+                const label = `${item.Mes}/${item.Ano}`;
+
+                if (!acc[monthYearKey]) {
+                    acc[monthYearKey] = { label: label, ggr: 0, ftd: 0, deposits: 0 };
+                }
+                acc[monthYearKey].ggr += safeParseNumber(item.GGR);
+                acc[monthYearKey].ftd += safeParseNumber(item.FTD); 
+                acc[monthYearKey].deposits += safeParseNumber(item.Depositos);
+                return acc;
+            }, {});
+
+            const sortedChartData = Object.keys(totalsByMonth)
+                                          .sort() 
+                                          .map(key => totalsByMonth[key]);
+
+            const labels = sortedChartData.map(item => item.label);
+            const ggrData = sortedChartData.map(item => item.ggr);
+            const ftdData = sortedChartData.map(item => item.ftd);
+            const depositsData = sortedChartData.map(item => item.deposits);
+
+            const ctxGGR = document.getElementById('ggrChart').getContext('2d');
+            if (ggrChartInstance) ggrChartInstance.destroy(); 
+            ggrChartInstance = new Chart(ctxGGR, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'GGR Total',
+                        data: ggrData,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) { return formatCurrency(value); }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const ctxFTD = document.getElementById('ftdChart').getContext('2d');
+            if (ftdChartInstance) ftdChartInstance.destroy();
+            ftdChartInstance = new Chart(ctxFTD, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'FTD Total',
+                        data: ftdData,
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true }, title: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            const ctxDeposits = document.getElementById('depositsChart').getContext('2d');
+            if (depositsChartInstance) depositsChartInstance.destroy();
+            depositsChartInstance = new Chart(ctxDeposits, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Depósitos Totais',
+                        data: depositsData,
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true }, title: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) { return formatCurrency(value); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // NOVO: Gráfico de Clubes Ativos
+        function createActiveClubsChart(dataToChart) {
+            const activeClubsByMonth = {};
+
+            dataToChart.forEach(item => {
+                const monthYearKey = `${item.Ano}-${String(monthOrderMap[String(item.Mes || '').toLowerCase()]).padStart(2, '0')}`;
+                const label = `${item.Mes}/${item.Ano}`;
+
+                if (!activeClubsByMonth[monthYearKey]) {
+                    activeClubsByMonth[monthYearKey] = { 
+                        label: label, 
+                        activeClubs: new Set() 
+                    };
+                }
+
+                if (String(item.Status || '').toLowerCase() === 'ativo') {
+                    activeClubsByMonth[monthYearKey].activeClubs.add(item.NomeClube);
+                }
+            });
+
+            const sortedChartData = Object.keys(activeClubsByMonth)
+                                          .sort()
+                                          .map(key => ({ 
+                                              label: activeClubsByMonth[key].label, 
+                                              count: activeClubsByMonth[key].activeClubs.size 
+                                          }));
+            
+            const labels = sortedChartData.map(item => item.label);
+            const counts = sortedChartData.map(item => item.count);
+
+            const ctx = document.getElementById('activeClubsChart').getContext('2d');
+            if (activeClubsChartInstance) activeClubsChartInstance.destroy();
+            activeClubsChartInstance = new Chart(ctx, {
+                type: 'bar', // Gráfico de barras para contagem
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Clubes Ativos',
+                        data: counts,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: true },
+                        title: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0 // Garante que a contagem seja inteira
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+
+</body>
+</html>
