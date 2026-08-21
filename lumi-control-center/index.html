@@ -16,12 +16,20 @@
   <iframe id="app" title="LUMI Control Center"></iframe>
   <script>
     const SOURCE='https://wfiuqoiycnftzhimewri.supabase.co/storage/v1/object/public/lumi-static/index.html';
+    const IMPORT_MAP={imports:{
+      'react':'https://esm.sh/react@19.2.8',
+      'react-dom':'https://esm.sh/react-dom@19.2.8',
+      'react/jsx-runtime':'https://esm.sh/react@19.2.8/jsx-runtime',
+      'react-dom/client':'https://esm.sh/react-dom@19.2.8/client'
+    }};
     (async()=>{
       try{
         const res=await fetch(SOURCE,{cache:'no-store'});
         if(!res.ok) throw new Error('HTTP '+res.status);
-        const html=await res.text();
+        let html=await res.text();
         if(!/^<!doctype html>/i.test(html.trim())) throw new Error('HTML inválido');
+        const mapTag='<scr'+'ipt type="importmap">'+JSON.stringify(IMPORT_MAP)+'</scr'+'ipt>';
+        html=html.replace('<script type="module">',mapTag+'<script type="module">');
         const frame=document.getElementById('app');
         frame.srcdoc=html;
         frame.addEventListener('load',()=>document.getElementById('loading')?.remove(),{once:true});
