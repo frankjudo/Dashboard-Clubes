@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LUMI — Control Center</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;background:#181c18}
+    #app{width:100%;height:100%;border:0;display:block;background:#181c18}
+    #loading{position:fixed;inset:0;display:grid;place-items:center;color:#fff;font-family:Arial,sans-serif;background:#181c18}
+    #loading small{display:block;color:#aeb5ac;margin-top:8px;text-align:center}
+  </style>
+</head>
+<body>
+  <div id="loading"><div>LUMI Control Center<small>Carregando a base v21…</small></div></div>
+  <iframe id="app" title="LUMI Control Center"></iframe>
+  <script>
+    const SOURCE='https://wfiuqoiycnftzhimewri.supabase.co/storage/v1/object/public/lumi-static/index.html';
+    (async()=>{
+      try{
+        const res=await fetch(SOURCE,{cache:'no-store'});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const html=await res.text();
+        if(!/^<!doctype html>/i.test(html.trim())) throw new Error('HTML inválido');
+        const frame=document.getElementById('app');
+        frame.srcdoc=html;
+        frame.addEventListener('load',()=>document.getElementById('loading')?.remove(),{once:true});
+      }catch(err){
+        document.getElementById('loading').innerHTML='<div>Não foi possível carregar o LUMI.<small>'+String(err)+'</small></div>';
+      }
+    })();
+  </script>
+</body>
+</html>
