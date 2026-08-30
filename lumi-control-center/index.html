@@ -32,7 +32,18 @@
         html=html.replace('<script type="module">',mapTag+'<script type="module">');
         const frame=document.getElementById('app');
         frame.srcdoc=html;
-        frame.addEventListener('load',()=>document.getElementById('loading')?.remove(),{once:true});
+        frame.addEventListener('load',()=>{
+          document.getElementById('loading')?.remove();
+          try{
+            frame.contentDocument?.addEventListener('click',(ev)=>{
+              const target=ev.target instanceof Element ? ev.target.closest('button,a') : null;
+              if(target && target.textContent?.trim()==='Estoque'){
+                ev.preventDefault(); ev.stopPropagation();
+                window.location.href='./estoque-admin.html';
+              }
+            },true);
+          }catch(e){ console.warn('LUMI stock router',e); }
+        },{once:true});
       }catch(err){
         document.getElementById('loading').innerHTML='<div>Não foi possível carregar o LUMI.<small>'+String(err)+'</small></div>';
       }
