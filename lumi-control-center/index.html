@@ -39,7 +39,7 @@
               const target=ev.target instanceof Element ? ev.target.closest('button,a') : null;
               if(target && target.textContent?.trim()==='Estoque'){
                 ev.preventDefault(); ev.stopPropagation();
-                window.location.href='./estoque-admin.html';
+                window.location.href='./estoque-operacao.html';
               }
             },true);
           }catch(e){ console.warn('LUMI stock router',e); }
