@@ -1,10 +1,15 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LUMI — Estoque Operacional</title><link rel="stylesheet" href="./estoque-operacao.css?v=3"></head><body><div id="root"><div style="max-width:420px;margin:90px auto;padding:24px;font-family:Arial,sans-serif;background:#fff;border:1px solid #e5e0d7;border-radius:14px"><strong>LUMI Control Center</strong><p style="color:#747c75">Carregando Estoque Operacional...</p></div></div><div id="modal" class="modal"></div><script type="module">
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LUMI — Estoque Operacional</title><link rel="stylesheet" href="./estoque-operacao.css?v=4"></head><body><div id="root"><div style="max-width:420px;margin:90px auto;padding:24px;font-family:Arial,sans-serif;background:#fff;border:1px solid #e5e0d7;border-radius:14px"><strong>LUMI Control Center</strong><p style="color:#747c75">Carregando Estoque Operacional...</p></div></div><div id="modal" class="modal"></div><script type="module">
 (async()=>{
+  const ids=['root','modal','content','email','pass','q','table','qty','note','fmsg','acts','receive_note'];
+  for(const id of ids){
+    if(id==='root'||id==='modal'){window[id]=document.getElementById(id);continue;}
+    try{Object.defineProperty(window,id,{configurable:true,get(){return document.getElementById(id)}})}catch(_){ }
+  }
   try{
     const mod=await import('https://esm.sh/@supabase/supabase-js@2');
     window.supabase={createClient:mod.createClient};
     const s=document.createElement('script');
-    s.src='./estoque-operacao.js?v=3';
+    s.src='./estoque-operacao.js?v=4';
     s.onerror=()=>{document.getElementById('root').innerHTML='<div style="max-width:520px;margin:90px auto;padding:24px;font-family:Arial,sans-serif;background:#fff;border:1px solid #e5e0d7;border-radius:14px"><strong>Não foi possível carregar o Estoque.</strong><p>Falha ao carregar o arquivo da aplicação. Atualize a página com Ctrl + F5.</p></div>'};
     document.body.appendChild(s);
   }catch(err){
